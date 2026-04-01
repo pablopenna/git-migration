@@ -33,10 +33,7 @@ Both files default to the project root. Their paths can be overridden with `--ex
 ## Usage
 
 ```bash
-./target/release/git-migration \
-  --source github \
-  --destination gitlab \
-  --mode exclude
+./target/release/git-migration --source github --destination gitlab --mode exclude
 ```
 
 | Parameter | Description |

@@ -86,15 +86,25 @@ pub async fn migrate_repo(
             .with_context(|| format!("Failed to create '{}' on destination", name))?;
     }
 
-    // 3. Push all refs to destination with --mirror (handles branches, tags, deletions)
+    // 3. Push all branches and tags to destination.
+    // Note: --mirror is avoided here because providers like GitLab protect the default branch
+    // from force-pushes and ref deletions, returning HTTP 422. Instead we push branches and
+    // tags separately with --force, which is idempotent and works regardless of branch
+    // protection settings. Stale refs at the destination are not pruned.
     let dest_url = dest.push_url(name);
     let dest_display = redact_url(&dest_url);
     run_git(
-        &["push", "--mirror", &dest_url],
-        &["push", "--mirror", &dest_display],
+        &["push", "--force", "--all", &dest_url],
+        &["push", "--force", "--all", &dest_display],
         Some(&clone_path),
     )
-    .with_context(|| format!("Failed to mirror-push '{}' to destination", name))?;
+    .with_context(|| format!("Failed to push branches of '{}' to destination", name))?;
+    run_git(
+        &["push", "--force", "--tags", &dest_url],
+        &["push", "--force", "--tags", &dest_display],
+        Some(&clone_path),
+    )
+    .with_context(|| format!("Failed to push tags of '{}' to destination", name))?;
 
     // tmp_dir is dropped here, cleaning up the bare clone automatically
     Ok(())

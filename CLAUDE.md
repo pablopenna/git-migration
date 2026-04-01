@@ -63,7 +63,7 @@ Both `--source` and `--destination` must match a supported provider in the codeb
 4.- The logic of copying over is the following for each repository that is being processed:
   a.- Check if the repository exists in the destination. If not, create a new one with the same name, preserving the visibility of the source repository (public repositories are created as public, private repositories are created as private).
   b.- Mirror-clone the source repository with `git clone --mirror` into a temporary directory.
-  c.- Push all refs (branches, tags) to the destination with `git push --mirror`. This is idempotent: refs that already exist and are up-to-date are no-ops, new refs are created, updated refs are fast-forwarded, and refs present at the destination but absent from the source are deleted. The temporary directory is cleaned up automatically after the push.
+  c.- Push all branches with `git push --force --all` and all tags with `git push --force --tags` to the destination. Both commands are idempotent: refs that already exist and are up-to-date are no-ops, new refs are created, and updated refs are force-pushed. Stale refs at the destination that no longer exist at the source are not deleted. The temporary directory is cleaned up automatically after the push.
 
 5.- The base structure of the app should be flexible enough so it can be easily expanded to support extra Git providers like GitBucket.
 
@@ -75,7 +75,7 @@ Both `--source` and `--destination` must match a supported provider in the codeb
 
 3. **Error handling**: On failure, skip the repository and continue. Print a summary at the end of execution with counts (succeeded / failed / skipped) and per-repository error details for any failures.
 
-4. **Destination sync**: Use `git clone --mirror` + `git push --mirror`. This syncs all refs fully in one operation: creates missing refs, fast-forwards outdated ones, and deletes refs at the destination that no longer exist at the source.
+4. **Destination sync**: Use `git clone --mirror` to fetch all refs, then `git push --force --all` + `git push --force --tags` to push branches and tags respectively. `git push --mirror` is intentionally avoided: providers like GitLab protect the default branch from force-pushes and ref deletions, responding with HTTP 422. The force-push approach works regardless of branch protection settings. Trade-off: stale refs at the destination are not pruned.
 
 5. **GitBucket**: Stub out the provider with the correct trait implementation so the architecture supports it, but leave the actual API calls unimplemented (panic or return `unimplemented!`). Only GitHub and GitLab are fully implemented.
 
