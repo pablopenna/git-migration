@@ -62,8 +62,8 @@ Both `--source` and `--destination` must match a supported provider in the codeb
 
 4.- The logic of copying over is the following for each repository that is being processed:
   a.- Check if the repository exists in the destination. If not, create a new one with the same name, preserving the visibility of the source repository (public repositories are created as public, private repositories are created as private).
-  b.- For every branch in the source, push it to the destination using `git push`. Let the server-side ref comparison handle idempotency — if the branch and all its commits already exist, the push is a no-op. If the branch doesn't exist, it will be created. If it exists but is behind, it will be fast-forwarded.
-  c.- All tags from the source are pushed to the destination as well, using the same idempotency approach as branches.
+  b.- Mirror-clone the source repository with `git clone --mirror` into a temporary directory.
+  c.- Push all refs (branches, tags) to the destination with `git push --mirror`. This is idempotent: refs that already exist and are up-to-date are no-ops, new refs are created, updated refs are fast-forwarded, and refs present at the destination but absent from the source are deleted. The temporary directory is cleaned up automatically after the push.
 
 5.- The base structure of the app should be flexible enough so it can be easily expanded to support extra Git providers like GitBucket.
 
@@ -75,7 +75,7 @@ Both `--source` and `--destination` must match a supported provider in the codeb
 
 3. **Error handling**: On failure, skip the repository and continue. Print a summary at the end of execution with counts (succeeded / failed / skipped) and per-repository error details for any failures.
 
-4. **Destination sync**: If the destination repository already exists, sync it fully — push all source branches and tags, and delete any branches or tags at the destination that no longer exist at the source.
+4. **Destination sync**: Use `git clone --mirror` + `git push --mirror`. This syncs all refs fully in one operation: creates missing refs, fast-forwards outdated ones, and deletes refs at the destination that no longer exist at the source.
 
 5. **GitBucket**: Stub out the provider with the correct trait implementation so the architecture supports it, but leave the actual API calls unimplemented (panic or return `unimplemented!`). Only GitHub and GitLab are fully implemented.
 

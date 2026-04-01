@@ -44,10 +44,14 @@ Both files default to the project root. Their paths can be overridden with `--ex
 | `--source` | Provider to migrate from (`github`, `gitlab`, `gitbucket`) |
 | `--destination` | Provider to migrate to (`github`, `gitlab`, `gitbucket`) |
 | `--mode` | `exclude` to skip repos in `excluded` file, `include` to only migrate repos in `included` file |
+| `--jobs` | Number of concurrent migrations (default: number of CPUs); use `--jobs 1` for sequential |
 | `--excluded-file` | Path to the excluded list (default: `./excluded`) |
 | `--included-file` | Path to the included list (default: `./included`) |
+| `--credentials-file` | Path to the credentials file (default: `./.credentials.json`) |
 
-The program runs once and exits. Re-run it manually to sync again.
+The program runs once and exits with code 0 on full success or 1 if any repositories failed. Re-run it manually to sync again.
+
+Lines in the `excluded`/`included` files starting with `#` are treated as comments and ignored.
 
 ---
 
@@ -98,4 +102,11 @@ Your `username` is your GitHub login name shown at the top of your profile page.
 8. Click **Create personal access token**.
 9. Copy the token immediately — GitLab will not show it again. Paste it as the `token` value under `"gitlab"` in `.credentials.json`.
 
-Your `username` is your GitLab login name shown on your profile page. The `namespace` is the username or group path where new repositories will be created (for personal repos, this is the same as your username).
+Your `username` is your GitLab login name shown on your profile page.
+
+The `namespace` is the path prefix used for all repository operations (`namespace/repo-name`). It can be omitted — if absent, `username` is used as the fallback.
+
+- **Personal repos** (under your own account): use your GitLab username, or omit the field entirely.
+- **Group**: use the group's URL slug. For example, if your group is at `gitlab.com/my-org`, the namespace is `my-org`. For nested subgroups like `gitlab.com/my-org/team`, use `my-org/team`.
+
+To find the right value, navigate to the group or your profile on GitLab and copy the path from the URL after `gitlab.com/`.
